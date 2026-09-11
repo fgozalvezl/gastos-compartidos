@@ -1,0 +1,60 @@
+<ui:FluentWindow x:Class="GastosCompartidos.Views.Dialogs.PersonEditWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 Title="{Binding Title}"
+                 Width="430" SizeToContent="Height"
+                 WindowStartupLocation="CenterOwner"
+                 ResizeMode="NoResize"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar Grid.Row="0" Title="{Binding Title}" ShowMaximize="False" ShowMinimize="False" />
+
+        <StackPanel Grid.Row="1" Margin="22,6,22,18">
+            <TextBlock Text="Nombre" Style="{StaticResource FieldLabel}" />
+            <ui:TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="Ej. Ana" />
+
+            <TextBlock Text="Ingreso mensual de referencia (para división proporcional)" Style="{StaticResource FieldLabel}" />
+            <ui:TextBox Text="{Binding MonthlyIncome, UpdateSourceTrigger=LostFocus}" PlaceholderText="0" />
+
+            <TextBlock Text="Color" Style="{StaticResource FieldLabel}" />
+            <ListBox ItemsSource="{Binding ColorOptions}" SelectedItem="{Binding ColorHex}"
+                     Background="Transparent" BorderThickness="0"
+                     ItemTemplate="{StaticResource ColorSwatchTemplate}"
+                     ItemContainerStyle="{StaticResource SwatchItemStyle}"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+            </ListBox>
+
+            <CheckBox Content="Activa (aparece como participante en nuevos gastos)"
+                      IsChecked="{Binding IsActive}" Margin="0,14,0,0" />
+
+            <TextBlock Text="{Binding Error}" Foreground="{DynamicResource SystemFillColorCriticalBrush}" TextWrapping="Wrap" Margin="0,12,0,0"
+                       Visibility="{Binding Error, Converter={StaticResource NotEmptyToVisible}}" />
+        </StackPanel>
+
+        <Border Grid.Row="2" Padding="22,14" Background="{DynamicResource ControlFillColorSecondaryBrush}">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <ui:Button Content="Cancelar" Click="Cancel_Click" Margin="0,0,8,0" />
+                <ui:Button Content="Guardar" Appearance="Primary" Click="Save_Click">
+                    <ui:Button.Icon>
+                        <ui:SymbolIcon Symbol="Save24" />
+                    </ui:Button.Icon>
+                </ui:Button>
+            </StackPanel>
+        </Border>
+    </Grid>
+</ui:FluentWindow>

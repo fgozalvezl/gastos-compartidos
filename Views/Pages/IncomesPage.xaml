@@ -1,0 +1,138 @@
+<Page x:Class="GastosCompartidos.Views.Pages.IncomesPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:helpers="clr-namespace:GastosCompartidos.Helpers"
+      Title="Ingresos">
+
+    <Grid helpers:ScrollViewerHelper.BindHeightToHost="True" Margin="{StaticResource PagePadding}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Ingresos" Style="{StaticResource PageTitle}" />
+                    <!-- Indicador de carga (B14) -->
+                    <ui:ProgressRing IsIndeterminate="True" Width="20" Height="20"
+                                     Margin="12,0,0,0" VerticalAlignment="Center"
+                                     Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisible}}" />
+                </StackPanel>
+                <TextBlock Text="Registrá los ingresos de cada persona por tipo" Style="{StaticResource PageSubtitle}" />
+            </StackPanel>
+            <ui:Button HorizontalAlignment="Right" VerticalAlignment="Top"
+                       Appearance="Primary" Content="Nuevo ingreso"
+                       Command="{Binding AddCommand}">
+                <ui:Button.Icon>
+                    <ui:SymbolIcon Symbol="Add24" />
+                </ui:Button.Icon>
+            </ui:Button>
+        </Grid>
+
+        <!-- Filtros (U2): mismo criterio que Gastos — WrapPanel + total fijo a la derecha -->
+        <ui:Card Grid.Row="1" Margin="0,4,0,14" Padding="14">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- el margen inferior negativo compensa el separador de 6 px de cada item cuando NO hay salto de fila -->
+                <WrapPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,0,-6">
+                    <ui:TextBox Width="230" PlaceholderText="Buscar por persona, tipo o descripción…"
+                                Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                Margin="0,0,10,6">
+                        <ui:TextBox.Icon>
+                            <ui:SymbolIcon Symbol="Search24" />
+                        </ui:TextBox.Icon>
+                    </ui:TextBox>
+
+                    <!-- SelectedDateFormat="Short" (U12): el formato largo no entra en 126 px -->
+                    <DatePicker Width="126" Margin="0,0,8,6" SelectedDateFormat="Short" SelectedDate="{Binding From}" />
+                    <DatePicker Width="126" Margin="0,0,10,6" SelectedDateFormat="Short" SelectedDate="{Binding To}" />
+
+                    <ui:Button Content="Limpiar" Appearance="Secondary" Margin="0,0,0,6"
+                               Command="{Binding ClearFiltersCommand}" />
+                </WrapPanel>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
+                    <TextBlock Text="Total filtrado" FontSize="11" Opacity="0.6" HorizontalAlignment="Right" />
+                    <TextBlock Text="{Binding Total, Converter={StaticResource Currency}}"
+                               FontWeight="Bold" FontSize="16" HorizontalAlignment="Right" />
+                </StackPanel>
+            </Grid>
+        </ui:Card>
+
+        <!-- VerticalAlignment="Stretch": mismo criterio que Gastos — el estilo de ui:Card
+             viene con VerticalAlignment="Center" y dejaba la grilla centrada en la fila -->
+        <ui:Card Grid.Row="2" Padding="0"
+                 VerticalAlignment="Stretch" VerticalContentAlignment="Stretch">
+            <Grid>
+                <DataGrid x:Name="IncomesGrid"
+                          ItemsSource="{Binding Incomes}"
+                          SelectedItem="{Binding SelectedIncome}"
+                          AutoGenerateColumns="False" IsReadOnly="True"
+                          HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                          CanUserAddRows="False"
+                          MouseDoubleClick="IncomesGrid_MouseDoubleClick"
+                          Background="Transparent" BorderThickness="0">
+                    <!--
+                        Columnas (U3): los anchos fijos sumaban 656 px sobre 649 disponibles y
+                        «Descripción» quedaba en 20 px. Proporcionales con MinWidth (suma de
+                        mínimos 590 px, entra con barra vertical incluida).
+                    -->
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Fecha" Width="78"
+                                            ElementStyle="{StaticResource GridCellText}"
+                                            Binding="{Binding Date, StringFormat=dd/MM/yyyy}" />
+                        <DataGridTextColumn Header="Persona" Width="1.4*" MinWidth="90"
+                                            ElementStyle="{StaticResource GridCellText}"
+                                            Binding="{Binding Person.Name}" />
+                        <DataGridTextColumn Header="Tipo" Width="1.6*" MinWidth="96"
+                                            ElementStyle="{StaticResource GridCellText}"
+                                            Binding="{Binding IncomeType.Name}" />
+                        <DataGridTextColumn Header="Monto" Width="104"
+                                            ElementStyle="{StaticResource GridCellAmount}"
+                                            Binding="{Binding Amount, Converter={StaticResource Currency}}" />
+                        <DataGridTextColumn Header="Descripción" Width="3*" MinWidth="156"
+                                            ElementStyle="{StaticResource GridCellText}"
+                                            Binding="{Binding Description}" />
+                        <DataGridTemplateColumn Header="" Width="66">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <ui:Button Appearance="Secondary" Padding="7" Margin="0,0,4,0"
+                                                   ToolTip="Editar"
+                                                   Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                   CommandParameter="{Binding}">
+                                            <ui:Button.Icon>
+                                                <ui:SymbolIcon Symbol="Edit24" />
+                                            </ui:Button.Icon>
+                                        </ui:Button>
+                                        <ui:Button Appearance="Danger" Padding="7"
+                                                   ToolTip="Eliminar"
+                                                   Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                   CommandParameter="{Binding}">
+                                            <ui:Button.Icon>
+                                                <ui:SymbolIcon Symbol="Delete24" />
+                                            </ui:Button.Icon>
+                                        </ui:Button>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                            Visibility="{Binding ResultCount, Converter={StaticResource ZeroToVisible}}">
+                    <ui:SymbolIcon Symbol="Wallet24" FontSize="40" Opacity="0.35" HorizontalAlignment="Center" />
+                    <TextBlock Text="No hay ingresos para mostrar" Opacity="0.6" Margin="0,10,0,0" />
+                </StackPanel>
+            </Grid>
+        </ui:Card>
+    </Grid>
+</Page>

@@ -1,0 +1,183 @@
+<Page x:Class="GastosCompartidos.Views.Pages.ExpensesPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:helpers="clr-namespace:GastosCompartidos.Helpers"
+      Title="Gastos">
+
+    <Grid helpers:ScrollViewerHelper.BindHeightToHost="True" Margin="{StaticResource PagePadding}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Encabezado -->
+        <Grid Grid.Row="0">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Gastos" Style="{StaticResource PageTitle}" />
+                    <!-- Indicador de carga (B14) -->
+                    <ui:ProgressRing IsIndeterminate="True" Width="20" Height="20"
+                                     Margin="12,0,0,0" VerticalAlignment="Center"
+                                     Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisible}}" />
+                </StackPanel>
+                <TextBlock Text="Registrá y dividí los gastos del grupo" Style="{StaticResource PageSubtitle}" />
+            </StackPanel>
+            <ui:Button HorizontalAlignment="Right" VerticalAlignment="Top"
+                       Appearance="Primary" Content="Nuevo gasto"
+                       Command="{Binding AddCommand}">
+                <ui:Button.Icon>
+                    <ui:SymbolIcon Symbol="Add24" />
+                </ui:Button.Icon>
+            </ui:Button>
+        </Grid>
+
+        <!--
+            Filtros (U2). Los controles necesitaban 878 px y dentro de la tarjeta hay 622 px
+            con la ventana en su ancho mínimo (940). Ahora van en un WrapPanel: entran en una
+            fila desde ~1180 px de ventana y se parten en dos filas por debajo, sin recortes.
+            El total queda fijo a la derecha, que es el dato que antes se salía de la tarjeta.
+        -->
+        <ui:Card Grid.Row="1" Margin="0,4,0,14" Padding="14">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <!-- el margen inferior negativo compensa el separador de 6 px de cada item cuando NO hay salto de fila -->
+                <WrapPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,0,-6">
+                    <ui:TextBox Width="230" PlaceholderText="Buscar por descripción, categoría o persona…"
+                                Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                Margin="0,0,10,6">
+                        <ui:TextBox.Icon>
+                            <ui:SymbolIcon Symbol="Search24" />
+                        </ui:TextBox.Icon>
+                    </ui:TextBox>
+
+                    <ComboBox Width="150" Margin="0,0,10,6"
+                              ItemsSource="{Binding CategoryFilters}"
+                              SelectedItem="{Binding CategoryFilter}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding IconGlyph}" Margin="0,0,6,0" />
+                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <!-- SelectedDateFormat="Short" (U12): el formato largo ("martes, 1 de
+                         septiembre de 2026") no entra en los 126 px y se recortaba -->
+                    <DatePicker Width="126" Margin="0,0,8,6" SelectedDateFormat="Short" SelectedDate="{Binding From}" />
+                    <DatePicker Width="126" Margin="0,0,10,6" SelectedDateFormat="Short" SelectedDate="{Binding To}" />
+
+                    <ui:Button Content="Limpiar" Appearance="Secondary" Margin="0,0,0,6"
+                               Command="{Binding ClearFiltersCommand}" />
+                </WrapPanel>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
+                    <TextBlock Text="Total filtrado" FontSize="11" Opacity="0.6" HorizontalAlignment="Right" />
+                    <TextBlock Text="{Binding Total, Converter={StaticResource Currency}}"
+                               FontWeight="Bold" FontSize="16" HorizontalAlignment="Right" />
+                </StackPanel>
+            </Grid>
+        </ui:Card>
+
+        <!--
+            Tabla. VerticalAlignment: el estilo por defecto de ui:Card en WPF-UI 3.0.5
+            trae VerticalAlignment="Center", así que la tarjeta se quedaba con su alto natural
+            y quedaba centrada en la fila "*" (la cabecera de la grilla caía en y=374 con una
+            franja vacía arriba). VerticalContentAlignment sólo alinea el contenido DENTRO de
+            la tarjeta, por eso no alcanzaba. Con Stretch la tarjeta ocupa toda la fila y la
+            grilla usa el alto completo y desplaza internamente.
+        -->
+        <ui:Card Grid.Row="2" Padding="0"
+                 VerticalAlignment="Stretch" VerticalContentAlignment="Stretch">
+            <Grid>
+                <DataGrid x:Name="ExpensesGrid"
+                          ItemsSource="{Binding Expenses}"
+                          SelectedItem="{Binding SelectedExpense}"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          HeadersVisibility="Column"
+                          GridLinesVisibility="Horizontal"
+                          CanUserAddRows="False"
+                          MouseDoubleClick="ExpensesGrid_MouseDoubleClick"
+                          Background="Transparent" BorderThickness="0">
+                    <!--
+                        Columnas (U3). Antes los anchos fijos sumaban 756 px sobre 649 disponibles
+                        a 940 px de ventana y «Descripción» colapsaba a 20 px. Ahora las cuatro
+                        columnas de texto son proporcionales con MinWidth: la suma de mínimos
+                        (614 px) entra en los 637 px que quedan incluso con la barra vertical.
+                    -->
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Fecha" Width="78"
+                                            ElementStyle="{StaticResource GridCellText}"
+                                            Binding="{Binding Date, StringFormat=dd/MM/yyyy}" />
+                        <DataGridTextColumn Header="Descripción" Width="3.2*" MinWidth="156"
+                                            ElementStyle="{StaticResource GridCellText}"
+                                            Binding="{Binding Description}" />
+                        <DataGridTemplateColumn Header="Categoría" Width="1.5*" MinWidth="92">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <!-- Grid (no StackPanel): el nombre necesita ancho acotado para recortar con elipsis -->
+                                    <Grid VerticalAlignment="Center">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding Category.IconGlyph}" Margin="0,0,7,0" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Category.Name}"
+                                                   TextTrimming="CharacterEllipsis" Margin="0,0,6,0" />
+                                    </Grid>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Pagó" Width="1*" MinWidth="60"
+                                            ElementStyle="{StaticResource GridCellText}"
+                                            Binding="{Binding PaidBy.Name}" />
+                        <DataGridTextColumn Header="División" Width="1.8*" MinWidth="58"
+                                            ElementStyle="{StaticResource GridCellText}"
+                                            Binding="{Binding SplitType, Converter={StaticResource SplitTypeName}}" />
+                        <DataGridTextColumn Header="Monto" Width="104"
+                                            ElementStyle="{StaticResource GridCellAmount}"
+                                            Binding="{Binding Amount, Converter={StaticResource Currency}}" />
+                        <DataGridTemplateColumn Header="" Width="66">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <ui:Button Appearance="Secondary" Padding="7" Margin="0,0,4,0"
+                                                   ToolTip="Editar"
+                                                   Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                   CommandParameter="{Binding}">
+                                            <ui:Button.Icon>
+                                                <ui:SymbolIcon Symbol="Edit24" />
+                                            </ui:Button.Icon>
+                                        </ui:Button>
+                                        <ui:Button Appearance="Danger" Padding="7"
+                                                   ToolTip="Eliminar"
+                                                   Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                   CommandParameter="{Binding}">
+                                            <ui:Button.Icon>
+                                                <ui:SymbolIcon Symbol="Delete24" />
+                                            </ui:Button.Icon>
+                                        </ui:Button>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                            Visibility="{Binding ResultCount, Converter={StaticResource ZeroToVisible}}">
+                    <ui:SymbolIcon Symbol="Receipt24" FontSize="40" Opacity="0.35" HorizontalAlignment="Center" />
+                    <TextBlock Text="No hay gastos para mostrar" Opacity="0.6" Margin="0,10,0,0" />
+                </StackPanel>
+            </Grid>
+        </ui:Card>
+    </Grid>
+</Page>

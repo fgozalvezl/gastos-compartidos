@@ -1,0 +1,100 @@
+<Page x:Class="GastosCompartidos.Views.Pages.PeoplePage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:helpers="clr-namespace:GastosCompartidos.Helpers"
+      Title="Personas">
+
+    <Grid helpers:ScrollViewerHelper.BindHeightToHost="True" Margin="{StaticResource PagePadding}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Personas" Style="{StaticResource PageTitle}" />
+                    <!-- Indicador de carga (B14) -->
+                    <ui:ProgressRing IsIndeterminate="True" Width="20" Height="20"
+                                     Margin="12,0,0,0" VerticalAlignment="Center"
+                                     Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisible}}" />
+                </StackPanel>
+                <TextBlock Text="Quiénes comparten los gastos y su ingreso de referencia" Style="{StaticResource PageSubtitle}" />
+            </StackPanel>
+            <ui:Button HorizontalAlignment="Right" VerticalAlignment="Top"
+                       Appearance="Primary" Content="Nueva persona"
+                       Command="{Binding AddCommand}">
+                <ui:Button.Icon>
+                    <ui:SymbolIcon Symbol="PersonAdd24" />
+                </ui:Button.Icon>
+            </ui:Button>
+        </Grid>
+
+        <ScrollViewer Grid.Row="1" helpers:ScrollViewerHelper.FixMouseWheel="True" VerticalScrollBarVisibility="Auto">
+            <Grid>
+                <ItemsControl ItemsSource="{Binding People}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ui:Card Width="300" Margin="0,0,14,14">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Border Width="46" Height="46" CornerRadius="23"
+                                                Background="{Binding ColorHex, Converter={StaticResource HexBrush}}">
+                                            <ui:SymbolIcon Symbol="Person24" Foreground="White" FontSize="22"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Margin="14,0,0,0" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding Name}" FontSize="17" FontWeight="Bold" />
+                                                <Border Margin="8,0,0,0" Padding="6,1" CornerRadius="8"
+                                                        Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                                                        VerticalAlignment="Center"
+                                                        Visibility="{Binding IsActive, Converter={StaticResource InverseBoolToVisible}}">
+                                                    <TextBlock Text="Inactiva" FontSize="10" Opacity="0.8" />
+                                                </Border>
+                                            </StackPanel>
+                                            <TextBlock FontSize="12" Opacity="0.65" Margin="0,2,0,0">
+                                                <Run Text="Ingreso:" />
+                                                <Run Text="{Binding MonthlyIncome, Converter={StaticResource Currency}, Mode=OneWay}" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+                                        <ui:Button Appearance="Secondary" Content="Editar" Margin="0,0,6,0"
+                                                   Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                   CommandParameter="{Binding}">
+                                            <ui:Button.Icon>
+                                                <ui:SymbolIcon Symbol="Edit24" />
+                                            </ui:Button.Icon>
+                                        </ui:Button>
+                                        <ui:Button Appearance="Danger" Padding="9"
+                                                   ToolTip="Eliminar"
+                                                   Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                   CommandParameter="{Binding}">
+                                            <ui:Button.Icon>
+                                                <ui:SymbolIcon Symbol="Delete24" />
+                                            </ui:Button.Icon>
+                                        </ui:Button>
+                                    </StackPanel>
+                                </StackPanel>
+                            </ui:Card>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,60,0,0"
+                            Visibility="{Binding PeopleCount, Converter={StaticResource ZeroToVisible}}">
+                    <ui:SymbolIcon Symbol="PeopleTeam24" FontSize="44" Opacity="0.35" HorizontalAlignment="Center" />
+                    <TextBlock Text="Agregá a las personas que comparten gastos" Opacity="0.6" Margin="0,10,0,0" />
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</Page>

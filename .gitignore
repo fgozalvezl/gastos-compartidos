@@ -1,0 +1,11 @@
+# Build
+bin/
+obj/
+dist/
+*.user
+*.suo
+.vs/
+# Publicación / temporales
+*.pdb
+*.log
+TestResults/

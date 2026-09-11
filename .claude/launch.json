@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "cuotar",
+      "runtimeExecutable": "C:/Users/fran-/AppData/Local/nodejs-portable/node-v24.18.0-win-x64/node.exe",
+      "runtimeArgs": [
+        "C:/Users/fran-/OneDrive/Desktop/App Sin Nombre/node_modules/vite/bin/vite.js",
+        "C:/Users/fran-/OneDrive/Desktop/App Sin Nombre",
+        "--config",
+        "C:/Users/fran-/OneDrive/Desktop/App Sin Nombre/vite.config.ts",
+        "--port",
+        "5173",
+        "--strictPort"
+      ],
+      "port": 5173
+    }
+  ]
+}
